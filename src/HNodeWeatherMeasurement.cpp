@@ -44,9 +44,10 @@ HNodeWeatherMeasurement::setReading( double value )
 }
 
 void 
-HNodeWeatherMeasurement::setTimestamp( time_t value )
+HNodeWeatherMeasurement::setTimestamp( struct timeval &value )
 {
-    tstamp.tv_sec = value;
+    tstamp.tv_sec = value.tv_sec;
+    tstamp.tv_usec = value.tv_usec;
 }
 
 void 
@@ -64,39 +65,39 @@ HNodeWeatherMeasurement::getAsStr()
 
     strftime( timeBuf, sizeof timeBuf, "%Y-%m-%d %H:%M:%S", localtime( &(tstamp.tv_sec) ) );
 
-    sprintf( tmpStr,   "%d   %s  ", count, timeBuf );
+    sprintf( tmpStr,   "%06d   %s  ", count, timeBuf );
     resultStr = tmpStr;
 
     switch( type )
     {
         case HNWM_TYPE_WIND_SPEED:
             sprintf( tmpStr,   "    wind speed: %2.1f kph", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
 
         case HNWM_TYPE_TEMPERATURE:
             sprintf( tmpStr,   "  outside temp: %2.1f° F", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
 
         case HNWM_TYPE_RELATIVE_HUMIDITY:
             sprintf( tmpStr,   "      humidity: %2.1f%% RH", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
 
         case HNWM_TYPE_WIND_DIRECTION:
             sprintf( tmpStr,   "wind direction: %0.1f°", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
 
         case HNWM_TYPE_RAINFALL:
             sprintf( tmpStr,   "    rain gauge: %0.2f in.", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
 
         default:
             sprintf( tmpStr,   "   measurement: %2.1f", reading );
-            resultStr = tmpStr;
+            resultStr += tmpStr;
         break;
     }
 

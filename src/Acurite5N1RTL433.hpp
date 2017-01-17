@@ -210,6 +210,10 @@ class RTL433Demodulator
 
         int acurite_5n1raincounter;  // for 5n1 decoder
       
+        RTL433DemodNotify *notifyCB;
+
+        uint32_t measurementIndex;
+
         // Integer implementation of atan2() with int16_t normalized output
         int16_t atan2_int16( int16_t y, int16_t x );
 
@@ -234,14 +238,13 @@ class RTL433Demodulator
 
         void processRtlsdrData( unsigned char *iq_buf, uint32_t len );
 
-        void sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double reading, time_t timestamp );
+        void sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double reading, struct timeval &timestamp );
         //void trimReadingList();
 
         //boost::thread *rtlThread;
 
         //boost::mutex readingListMutex;
 
-        RTL433DemodNotify *notifyCB;
 
     public:
         RTL433Demodulator();

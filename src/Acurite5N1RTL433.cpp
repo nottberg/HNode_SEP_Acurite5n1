@@ -406,6 +406,8 @@ RTL433Demodulator::RTL433Demodulator()
     acurite_5n1raincounter = 0;
 
     notifyCB = NULL;
+
+    measurementIndex = 0;
 }
 
 RTL433Demodulator::~RTL433Demodulator()
@@ -987,7 +989,7 @@ RTL433Demodulator::acurite_getRainfallCounter( uint8_t hibyte, uint8_t lobyte )
 }
 
 void 
-RTL433Demodulator::sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double reading, time_t timestamp )
+RTL433Demodulator::sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double reading, struct timeval &timestamp )
 {
     HNodeWeatherMeasurement record;
 
@@ -996,10 +998,13 @@ RTL433Demodulator::sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double rea
 
     record.setType( type );
     record.setUnits( units );
+    record.setCount( measurementIndex );
     record.setReading( reading );
     record.setTimestamp( timestamp );
 
     notifyCB->notifyNewMeasurement( record );
+
+    measurementIndex += 1;
 }
 
 int 
@@ -1009,9 +1014,9 @@ RTL433Demodulator::extractAcurite5n1Data( RTL433BitBuffer *bits )
     // Jens Jensen 2014
     int i;
     uint8_t *buf = NULL;
-    time_t tstamp;
+    struct timeval tstamp;
 
-    time( &tstamp );
+    gettimeofday( &tstamp, NULL );
 
     // run through rows til we find one with good checksum (brute force)
     for( i=0; i < bits->getActiveRows(); i++ )

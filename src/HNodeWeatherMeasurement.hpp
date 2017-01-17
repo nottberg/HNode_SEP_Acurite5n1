@@ -46,8 +46,8 @@ class HNodeWeatherMeasurement
         void setUnits( HNWM_UNITS_T value );
         void setCount( uint32_t value );
         void setReading( double value );
-        void setTimestamp( time_t value );
 
+        void setTimestamp( struct timeval &value );
         void updateTimestamp();
 
         std::string getAsStr();
