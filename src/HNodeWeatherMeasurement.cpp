@@ -58,23 +58,29 @@ HNodeWeatherMeasurement::updateTimestamp()
 std::string 
 HNodeWeatherMeasurement::getAsStr()
 {
+    char timeBuf[64];
     char tmpStr[512];
     std::string resultStr;
+
+    strftime( timeBuf, sizeof timeBuf, "%Y-%m-%d %H:%M:%S", localtime( &(tstamp.tv_sec) ) );
+
+    sprintf( tmpStr,   "%d   %s  ", count, timeBuf );
+    resultStr = tmpStr;
 
     switch( type )
     {
         case HNWM_TYPE_WIND_SPEED:
-            sprintf( tmpStr,   "wind speed: %2.1f kph", reading );
+            sprintf( tmpStr,   "    wind speed: %2.1f kph", reading );
             resultStr = tmpStr;
         break;
 
         case HNWM_TYPE_TEMPERATURE:
-            sprintf( tmpStr,   "temp: %2.1f° F", reading );
+            sprintf( tmpStr,   "  outside temp: %2.1f° F", reading );
             resultStr = tmpStr;
         break;
 
         case HNWM_TYPE_RELATIVE_HUMIDITY:
-            sprintf( tmpStr,   "humidity: %2.1f%% RH", reading );
+            sprintf( tmpStr,   "      humidity: %2.1f%% RH", reading );
             resultStr = tmpStr;
         break;
 
@@ -84,12 +90,13 @@ HNodeWeatherMeasurement::getAsStr()
         break;
 
         case HNWM_TYPE_RAINFALL:
-            sprintf( tmpStr,   "rain gauge: %0.2f in.", reading );
+            sprintf( tmpStr,   "    rain gauge: %0.2f in.", reading );
             resultStr = tmpStr;
         break;
 
         default:
-             resultStr = "Unknown measurement type!!";
+            sprintf( tmpStr,   "   measurement: %2.1f", reading );
+            resultStr = tmpStr;
         break;
     }
 
