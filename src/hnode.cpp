@@ -12,6 +12,12 @@
 #include <errno.h>
 #include <stdio.h> 
 #include <glib.h>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
+#include <iostream>
+#include <cstddef>
 
 #include <avahi-client/client.h>
 #include <avahi-client/lookup.h>
@@ -29,7 +35,9 @@
 
 #include <hnode-rest.hpp>
 
-//#include "Acurite5N1RTL433.hpp"
+#include "HNodeWeatherEPPacket.hpp"
+#include "HNodeWeatherMeasurement.hpp"
+
 #include "Acurite5N1Manager.hpp"
 #include "WeatherResource.hpp"
 
@@ -53,6 +61,9 @@ typedef struct WeatherNodeContext
 
     bool      hasInstanceID;
     guint32   instanceID;
+
+    int       epfd;
+    bool      epConnected;
 
     RESTDaemon   Rest;
 
@@ -97,6 +108,38 @@ hnode_start_rest_daemon(CONTEXT *Context)
 }
 
 gboolean
+hnode_process_ep_packet( GIOChannel *source, GIOCondition condition, gpointer data )
+{
+    CONTEXT *Context = (CONTEXT *) data;
+
+    HNodeWeatherEPPacket    packet;
+    HNodeWeatherMeasurement reading;
+    uint32_t recvd = 0;
+
+    //std::cout << "start recvd..." << std::endl;
+
+    recvd += recv( Context->epfd, packet.getPacketPtr(), packet.getMaxPacketLength(), 0 );
+
+    switch( packet.getType() )
+    {
+        case HNWEPP_TYPE_HNW_MEASUREMENT:
+        {
+            reading.parsePacketData( packet.getPayloadPtr(), recvd );
+
+            std::cout << reading.getAsStr() << std::endl;
+                    //std::cout << "recvd: " << recvd << std::endl;
+        }
+        break;
+
+        default:
+        {
+            std::cout << "Unknown Packet Type - len: " << recvd << "  type: " << packet.getType() << std::endl;
+        }
+        break;
+    }
+}
+
+gboolean
 hnode_heartbeat( CONTEXT *Context )
 {
     //printf("hnode_heartbeat - start: 0x%x\n", Context);
@@ -104,6 +147,43 @@ hnode_heartbeat( CONTEXT *Context )
     // Get the current time
     //ScheduleDateTime curTime;
     //curTime.getCurrentTime();
+
+    // If we are not connected to the acrt4335n1 daemon
+    // then attempt to establish that connection here.
+    if( Context->epConnected == false )
+    {
+        struct sockaddr_un addr;
+        char *str;
+
+        memset(&addr, 0, sizeof(struct sockaddr_un));  // Clear address structure
+        addr.sun_family = AF_UNIX;                     // UNIX domain address
+
+        // addr.sun_path[0] has already been set to 0 by memset() 
+
+        // Abstract socket with name @acrt5n1d_readings
+        str = "acrt5n1d_readings";
+        strncpy( &addr.sun_path[1], str, strlen(str) );
+
+        Context->epfd = socket( AF_UNIX, SOCK_SEQPACKET, 0 );
+
+        if( connect( Context->epfd, (struct sockaddr *) &addr, sizeof( sa_family_t ) + strlen( str ) + 1 ) != 0 )
+        {
+            // Failed to connect
+            close( Context->epfd );
+            Context->epConnected = false;
+        }
+        else
+        {
+            // Connection established
+            Context->epConnected = true;
+
+            // add us to the event loop
+            GIOChannel *channel = g_io_channel_unix_new( Context->epfd );
+
+            // Pass connection as user_data to the watch callback
+            g_io_add_watch( channel, G_IO_IN, (GIOFunc) hnode_process_ep_packet, Context );
+        }
+    }
 
     // Process any pertinent events
     uint32_t time = 0;
@@ -192,10 +272,6 @@ main (AVAHI_GCC_UNUSED int argc, AVAHI_GCC_UNUSED char *argv[])
         Context.instanceID    = instance_id;
     }
 
-    //RTL433Demodulator *demod = new RTL433Demodulator;
-    //demod->run();
-    //demod.run();
-
     // Create the GLIB main loop 
     loop = g_main_loop_new (NULL, FALSE);
 
@@ -222,7 +298,7 @@ main (AVAHI_GCC_UNUSED int argc, AVAHI_GCC_UNUSED char *argv[])
     hnode_start_hardware_interface( &Context );
 
     // Start up the manager object
-    Context.wxManager.start();
+    Context.wxManager.start(); 
 
     // Fire up the rest daemon
     hnode_start_rest_daemon( &Context );

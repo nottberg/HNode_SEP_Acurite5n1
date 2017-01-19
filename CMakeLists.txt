@@ -5,6 +5,7 @@ SET( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/"
 
 SET( HNODE_ACCURITE5N1_SRC
      ${CMAKE_SOURCE_DIR}/src/hnode.cpp
+     ${CMAKE_SOURCE_DIR}/src/HNodeWeatherMeasurement.cpp
      ${CMAKE_SOURCE_DIR}/src/HNodeWeatherEPPacket.cpp
      ${CMAKE_SOURCE_DIR}/src/Acurite5N1Manager.cpp
      ${CMAKE_SOURCE_DIR}/src/WeatherResource.cpp
