@@ -4,6 +4,28 @@
 
 #include "HNodeWeatherMeasurement.hpp"
 
+const char* HNodeWMTypeStrings[] = 
+{
+    "notset",           // HNWM_TYPE_NOT_SET            
+    "windspeed",        // HNWM_TYPE_WIND_SPEED         
+    "temperature",      // HNWM_TYPE_TEMPERATURE        
+    "relativehumidity", // HNWM_TYPE_RELATIVE_HUMIDITY  
+    "winddirection",    // HNWM_TYPE_WIND_DIRECTION     
+    "rainfall"          // HNWM_TYPE_RAINFALL           
+};
+
+const char* HNodeWMUnitsStrings[] = 
+{
+    "notset",    // HNWM_UNITS_NOT_SET
+    "kph",       // HNWM_UNITS_KPH    
+    "mph",       // HNWM_UNITS_MPH    
+    "celsius",   // HNWM_UNITS_CELSIUS
+    "farenheit", // HNWM_UNITS_FAHRENHEIT 
+    "percent",   // HNWM_UNITS_PERCENT    
+    "degrees",   // HNWM_UNITS_DEGREES    
+    "inches"     // HNWM_UNITS_INCHES     
+};
+
 HNodeWeatherMeasurement::HNodeWeatherMeasurement()
 {
     type    = HNWM_TYPE_NOT_SET;
@@ -25,10 +47,64 @@ HNodeWeatherMeasurement::setType( HNWM_TYPE_T value )
    type = value;
 }
 
+HNWM_TYPE_T 
+HNodeWeatherMeasurement::getType()
+{
+    return type;
+}
+
+void 
+HNodeWeatherMeasurement::setTypeFromStr( std::string value )
+{
+    type = HNWM_TYPE_NOT_SET;
+
+    for( int i = 0; i < ( sizeof( HNodeWMTypeStrings )/sizeof( char* ) ); i++ )
+    {
+        if( value == HNodeWMTypeStrings[i] )
+        {
+            type = (HNWM_TYPE_T) i;
+            return;
+        }
+    }
+}
+
+std::string 
+HNodeWeatherMeasurement::getTypeAsStr()
+{
+    return HNodeWMTypeStrings[ type ];
+}
+
 void 
 HNodeWeatherMeasurement::setUnits( HNWM_UNITS_T value )
 {
     units = value;
+}
+
+HNWM_UNITS_T 
+HNodeWeatherMeasurement::getUnits()
+{
+    return units;
+}
+
+void 
+HNodeWeatherMeasurement::setUnitsFromStr( std::string value )
+{
+    units = HNWM_UNITS_NOT_SET;
+
+    for( int i = 0; i < ( sizeof( HNodeWMUnitsStrings )/sizeof( char* ) ); i++ )
+    {
+        if( value == HNodeWMUnitsStrings[i] )
+        {
+            units = (HNWM_UNITS_T) i;
+            return;
+        }
+    }
+}
+
+std::string 
+HNodeWeatherMeasurement::getUnitsAsStr()
+{
+    return HNodeWMUnitsStrings[ type ];
 }
 
 void 
@@ -54,6 +130,28 @@ void
 HNodeWeatherMeasurement::updateTimestamp()
 {
     gettimeofday( &tstamp, NULL );
+}
+
+
+
+
+uint32_t 
+HNodeWeatherMeasurement::getCount()
+{
+    return count;
+}
+
+double 
+HNodeWeatherMeasurement::getReading()
+{
+    return reading;
+}
+
+void 
+HNodeWeatherMeasurement::getTimestamp( struct timeval &value )
+{
+    value.tv_sec  = tstamp.tv_sec;
+    value.tv_usec = tstamp.tv_usec;
 }
 
 std::string 

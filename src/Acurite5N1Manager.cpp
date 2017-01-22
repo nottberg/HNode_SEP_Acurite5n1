@@ -19,6 +19,38 @@
 
 #include "Acurite5N1Manager.hpp"
 
+WeatherManagerMeasurements::WeatherManagerMeasurements()
+{
+
+}
+
+WeatherManagerMeasurements::~WeatherManagerMeasurements()
+{
+
+}
+
+void 
+WeatherManagerMeasurements::addNewMeasurement( HNodeWeatherMeasurement &measurement )
+{
+    history.push_front( measurement );
+
+    if( history.size() > 2880 )
+    {
+        history.pop_back();
+    }
+}
+
+bool 
+WeatherManagerMeasurements::getCurrentMeasurement( HNodeWeatherMeasurement &measurement )
+{
+    if( history.size() == 0 )
+        return false;
+
+    measurement = history.front();
+
+    return true;
+}
+
 Acurite5N1Manager::Acurite5N1Manager()
 {
     //cfgPath         = "/etc/hnode";  
@@ -84,16 +116,15 @@ Acurite5N1Manager::processCurrentEvents( uint32_t &curTime )
 void 
 Acurite5N1Manager::populateContentNodeFromStatusProvider( unsigned int id, RESTContentNode *outNode, std::map< std::string, std::string > paramMap )
 {
-#if 0
+
     switch( id )
     {
-        case SCHRSRC_STATID_STATUS:
+        case WXRSRC_STATID_CURRENT_READING:
         {
-            ScheduleEventList *eventList;
-
             // Give the root element a tag name
-            outNode->setAsObject( "irrigation-dashboard" );
+            outNode->setAsObject( "current-measurements" );
 
+#if 0
             // Give the currect time as we see it
             ScheduleDateTime timestamp;
             timestamp.getCurrentTime();
@@ -109,30 +140,51 @@ Acurite5N1Manager::populateContentNodeFromStatusProvider( unsigned int id, RESTC
 
             // Master enable state
             outNode->setField( "master-enable", masterEnable ? "true" : "false" );
+#endif
 
             // Add a list for any active zones
-            RESTContentNode *azList = RESTContentHelperFactory::newContentNode();
+            RESTContentNode *mList = RESTContentHelperFactory::newContentNode();
 
-            azList->setAsArray( "zone-states" );
-            outNode->addChild( azList );
+            mList->setAsArray( "measurement-list" );
+            outNode->addChild( mList );
 
-            for( int indx = 0; indx < zoneMgr->getZoneCount(); indx++ )
+            for( std::map< HNWM_TYPE_T, WeatherManagerMeasurements >::iterator it = measurements.begin(); it != measurements.end(); it++ )
             {
-                Zone *zonePtr;
+                RESTContentNode         *curNode;
+                HNodeWeatherMeasurement  curM;
+                struct timeval           tstamp;
+                char                     tmpStr[128];
+              
+                if( it->second.getCurrentMeasurement( curM ) == false )
+                {
+                    continue;
+                }
 
-                zonePtr = zoneMgr->getZoneByIndex( indx );
+                curNode = RESTContentHelperFactory::newContentNode();
 
-                RESTContentNode *curNode = RESTContentHelperFactory::newContentNode();
+                curNode->setAsObject( "measurement" );
 
-                curNode->setAsObject( "zone" );
+                curNode->setField( "type", curM.getTypeAsStr() );
+                curNode->setField( "units", curM.getUnitsAsStr() );
 
-                curNode->setField( "id", zonePtr->getID() );
-                curNode->setField( "name", zonePtr->getName() );
-                curNode->setField( "state", zonePtr->isStateOn() ? "on" : "off" );
+                sprintf( tmpStr, "%d", curM.getCount() ); 
+                curNode->setField( "epcount", tmpStr );
 
-                azList->addChild( curNode );
+                sprintf( tmpStr, "%lf", curM.getReading() ); 
+                curNode->setField( "reading", tmpStr );
+
+                curM.getTimestamp( tstamp );
+
+                sprintf( tmpStr, "%lu", tstamp.tv_sec ); 
+                curNode->setField( "tstamp_sec", tmpStr );
+
+                sprintf( tmpStr, "%lu", tstamp.tv_usec ); 
+                curNode->setField( "tstamp_usec", tmpStr );
+
+                mList->addChild( curNode );
             }
 
+#if 0
             // Add todays scheduled events
             RESTContentNode *dsList = RESTContentHelperFactory::newContentNode();
 
@@ -188,10 +240,10 @@ Acurite5N1Manager::populateContentNodeFromStatusProvider( unsigned int id, RESTC
             outNode->addChild( evList );
 
             eventLog.populateTodaysEventsNode( evList, timestamp );
-
+#endif
         }
         break;
-
+#if 0
         case SCHRSRC_STATID_EVENTLOG:
         {
             eventLog.populateContentNode( outNode );
@@ -276,13 +328,14 @@ Acurite5N1Manager::populateContentNodeFromStatusProvider( unsigned int id, RESTC
 
         }
         break;
+#endif
 
         default:
             std::cerr << "ERROR: Undefined status provider" << std::endl;
             return;
         break;
     }
-#endif
+
 }
 
 void
@@ -290,6 +343,25 @@ Acurite5N1Manager::start()
 {
     //demod = new RTL433Demodulator;
     //demod->start();
+}
+
+void 
+Acurite5N1Manager::addNewMeasurement( HNodeWeatherMeasurement &measurement )
+{
+    std::map< HNWM_TYPE_T, WeatherManagerMeasurements >::iterator it;
+
+    it = measurements.find( measurement.getType() );
+
+    if( it == measurements.end() )
+    {
+        WeatherManagerMeasurements mtmp;
+
+        measurements.insert( std::pair< HNWM_TYPE_T, WeatherManagerMeasurements >( measurement.getType(), mtmp ) );
+
+        it = measurements.find( measurement.getType() );
+    }
+    
+    it->second.addNewMeasurement( measurement );
 }
 
 RESTContentNode* 

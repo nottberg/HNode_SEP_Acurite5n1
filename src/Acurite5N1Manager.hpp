@@ -16,7 +16,7 @@
 
 #include <hnode-rest.hpp>
 
-//#include "Acurite5N1RTL433.hpp"
+#include "HNodeWeatherMeasurement.hpp"
 
 class Acurite5N1Exception : public std::exception
 {
@@ -54,10 +54,27 @@ typedef enum Acurite5N1StatusRequestIDs
     WXRSRC_STATID_CURRENT_READING = 1
 }WXRSRC_STATID_T;
 
+class WeatherManagerMeasurements
+{
+    private:
+        std::list< HNodeWeatherMeasurement > history;
+
+    public:
+
+        WeatherManagerMeasurements();
+       ~WeatherManagerMeasurements();
+
+        void addNewMeasurement(  HNodeWeatherMeasurement &measurement );
+
+        bool getCurrentMeasurement( HNodeWeatherMeasurement &measurement );
+};
+
 class Acurite5N1Manager : public RESTContentManager
 {
     private:
-        //RTL433Demodulator *demod;
+        std::string stationName;
+
+        std::map< HNWM_TYPE_T, WeatherManagerMeasurements > measurements;
 
         virtual void populateContentNodeFromStatusProvider( unsigned int id, RESTContentNode *outNode, std::map< std::string, std::string > paramMap );
 
@@ -72,6 +89,8 @@ class Acurite5N1Manager : public RESTContentManager
         void start();
 
         void processCurrentEvents( uint32_t &curTime );
+
+        void addNewMeasurement( HNodeWeatherMeasurement &measurement );
 
         virtual RESTContentNode* newObject( unsigned int type );
         virtual void freeObject( RESTContentNode *objPtr );

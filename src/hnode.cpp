@@ -128,6 +128,8 @@ hnode_process_ep_packet( GIOChannel *source, GIOCondition condition, gpointer da
 
             std::cout << reading.getAsStr() << std::endl;
                     //std::cout << "recvd: " << recvd << std::endl;
+
+            Context->wxManager.addNewMeasurement( reading );
         }
         break;
 

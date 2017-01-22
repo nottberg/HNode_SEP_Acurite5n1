@@ -8,7 +8,7 @@
 #include "WeatherResource.hpp"
 
 WeatherRootResource::WeatherRootResource( Acurite5N1Manager &mgr )
-:RESTResourceRESTStatusProvider( "/dashboard", mgr, WXRSRC_STATID_CURRENT_READING )
+:RESTResourceRESTStatusProvider( "/measurements/current", mgr, WXRSRC_STATID_CURRENT_READING )
 {
 
 }
