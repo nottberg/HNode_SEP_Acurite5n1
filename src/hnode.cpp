@@ -77,6 +77,8 @@ typedef struct WeatherNodeContext
 
 //static struct termios saved_io;
 
+#define HNODE_WEATHER_EP_DEFAULT_PORT 8888
+
 bool
 hnode_load_configuration(CONTEXT *Context)
 {
@@ -101,7 +103,7 @@ hnode_start_rest_daemon(CONTEXT *Context)
     // Init the REST resources.
     Context->Rest.registerResource( &(Context->wxResource) );
 
-    Context->Rest.setListeningPort( 8888 );
+    Context->Rest.setListeningPort( HNODE_WEATHER_EP_DEFAULT_PORT );
     Context->Rest.start();
 
     return false;
@@ -293,7 +295,7 @@ main (AVAHI_GCC_UNUSED int argc, AVAHI_GCC_UNUSED char *argv[])
     g_hnode_set_endpoint_count(Context.HNode, 1);
     
     //guint16 EndPointIndex, guint16 AssociatedEPIndex, guint8 *MimeTypeStr, guint16 Port, guint8 MajorVersion, guint8 MinorVersion, guint16 MicroVersion)
-    g_hnode_set_endpoint(Context.HNode, 0, 0, (guint8*)"hnode-weather-rest", REST_DAEMON_DEFAULT_PORT, 1, 0, 0);	
+    g_hnode_set_endpoint(Context.HNode, 0, 0, (guint8*)"hnode-weather-rest", HNODE_WEATHER_EP_DEFAULT_PORT, 1, 0, 0);	
 
     hnode_load_configuration( &Context );
 
