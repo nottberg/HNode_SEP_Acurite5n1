@@ -104,7 +104,7 @@ HNodeWeatherMeasurement::setUnitsFromStr( std::string value )
 std::string 
 HNodeWeatherMeasurement::getUnitsAsStr()
 {
-    return HNodeWMUnitsStrings[ type ];
+    return HNodeWMUnitsStrings[ units ];
 }
 
 void 
