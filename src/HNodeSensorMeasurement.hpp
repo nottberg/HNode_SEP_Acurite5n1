@@ -1,5 +1,5 @@
-#ifndef __HNODE_WEATHER_MEASUREMENT_H__
-#define __HNODE_WEATHER_MEASUREMENT_H__
+#ifndef __HNODE_SENSOR_MEASUREMENT_H__
+#define __HNODE_SENSOR_MEASUREMENT_H__
 
 #include <stdint.h>
 #include <time.h>
@@ -68,4 +68,4 @@ class HNodeWeatherMeasurement
         void parsePacketData( uint8_t *bufPtr, uint32_t length );
 };
 
-#endif // __HNODE_WEATHER_MEASUREMENT_H__
+#endif // __HNODE_SENSOR_MEASUREMENT_H__

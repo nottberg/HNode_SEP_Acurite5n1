@@ -2,7 +2,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#include "HNodeWeatherMeasurement.hpp"
+#include "HNodeSensorMeasurement.hpp"
 
 const char* HNodeWMTypeStrings[] = 
 {

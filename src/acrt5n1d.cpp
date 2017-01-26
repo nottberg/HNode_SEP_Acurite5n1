@@ -20,8 +20,8 @@
 #include <libdaemon/dpid.h>
 #include <libdaemon/dexec.h>
 
-#include "HNodeWeatherMeasurement.hpp"
-#include "HNodeWeatherEPPacket.hpp"
+#include "HNodeSensorMeasurement.hpp"
+#include "HNodeSEPPacket.hpp"
 #include "Acurite5N1RTL433.hpp"
 
 #if 0

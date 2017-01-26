@@ -1,5 +1,5 @@
-#ifndef __HNODE_WEATHER_EPPACKET_H__
-#define __HNODE_WEATHER_EPPACKET_H__
+#ifndef __HNODE_SEP_PACKET_H__
+#define __HNODE_SEP_PACKET_H__
 
 #include <stdint.h>
 
@@ -41,4 +41,4 @@ class HNodeWeatherEPPacket
         uint32_t getMaxPacketLength();
 };
 
-#endif // __HNODE_WEATHER_EPPACKET_H__
+#endif // __HNODE_SEP_PACKET_H__

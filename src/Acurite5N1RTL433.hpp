@@ -11,7 +11,7 @@
 
 #include "rtl-sdr.h"
 
-#include "HNodeWeatherMeasurement.hpp"
+#include "HNodeSensorMeasurement.hpp"
 
 #define FILTER_ORDER 1
 #define F_SCALE 15

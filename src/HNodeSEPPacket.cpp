@@ -1,4 +1,4 @@
-#include "HNodeWeatherEPPacket.hpp"
+#include "HNodeSEPPacket.hpp"
 
 HNodeWeatherEPPacket::HNodeWeatherEPPacket()
 {

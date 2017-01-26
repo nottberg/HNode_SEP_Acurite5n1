@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "HNodeWeatherEPPacket.hpp"
-#include "HNodeWeatherMeasurement.hpp"
+#include "HNodeSEPPacket.hpp"
+#include "HNodeSensorMeasurement.hpp"
 
 int main()
 {
