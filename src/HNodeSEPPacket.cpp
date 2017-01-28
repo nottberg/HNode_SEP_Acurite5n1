@@ -1,29 +1,29 @@
 #include "HNodeSEPPacket.hpp"
 
-HNodeWeatherEPPacket::HNodeWeatherEPPacket()
+HNodeSEPPacket::HNodeSEPPacket()
 {
 
 }
 
-HNodeWeatherEPPacket::~HNodeWeatherEPPacket()
+HNodeSEPPacket::~HNodeSEPPacket()
 {
 
 }
 
 void 
-HNodeWeatherEPPacket::setType( HNWEPP_TYPE_T value )
+HNodeSEPPacket::setType( HNSEPP_TYPE_T value )
 {
-    packetData.type = (HNWEPP_TYPE_T) value;
+    packetData.type = (HNSEPP_TYPE_T) value;
 }
 
-HNWEPP_TYPE_T 
-HNodeWeatherEPPacket::getType()
+HNSEPP_TYPE_T 
+HNodeSEPPacket::getType()
 {
-    return (HNWEPP_TYPE_T) packetData.type;
+    return (HNSEPP_TYPE_T) packetData.type;
 }
 
 void 
-HNodeWeatherEPPacket::setParam( int index, uint32_t value )
+HNodeSEPPacket::setParam( int index, uint32_t value )
 {
     if( index >= 6 )
         return;
@@ -32,7 +32,7 @@ HNodeWeatherEPPacket::setParam( int index, uint32_t value )
 }
 
 uint32_t
-HNodeWeatherEPPacket::getParam( int index )
+HNodeSEPPacket::getParam( int index )
 {
     if( index >= 6 )
         return -1;
@@ -41,7 +41,7 @@ HNodeWeatherEPPacket::getParam( int index )
 }
 
 void 
-HNodeWeatherEPPacket::setPayloadLength( uint32_t length )
+HNodeSEPPacket::setPayloadLength( uint32_t length )
 {
     if( length > sizeof( packetData.payload ) )
         length = sizeof( packetData.payload );
@@ -50,31 +50,31 @@ HNodeWeatherEPPacket::setPayloadLength( uint32_t length )
 }
 
 uint32_t 
-HNodeWeatherEPPacket::getPayloadLength()
+HNodeSEPPacket::getPayloadLength()
 {
     return packetData.payloadLength;
 }
 
 uint8_t* 
-HNodeWeatherEPPacket::getPayloadPtr()
+HNodeSEPPacket::getPayloadPtr()
 {
     return packetData.payload;
 }
 
 uint32_t 
-HNodeWeatherEPPacket::getPacketLength()
+HNodeSEPPacket::getPacketLength()
 {
     return packetData.payloadLength + ( sizeof( uint32_t ) * 8 );
 }
 
 uint8_t* 
-HNodeWeatherEPPacket::getPacketPtr()
+HNodeSEPPacket::getPacketPtr()
 {
     return (uint8_t*) &packetData;
 }
 
 uint32_t 
-HNodeWeatherEPPacket::getMaxPacketLength()
+HNodeSEPPacket::getMaxPacketLength()
 {
     return (sizeof packetData);
 }

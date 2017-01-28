@@ -3,31 +3,31 @@
 
 #include <stdint.h>
 
-typedef enum HNodeWeatherEPPacketTypeEnum
+typedef enum HNodeSEPPacketTypeEnum
 {
-    HNWEPP_TYPE_NOT_SET,
-    HNWEPP_TYPE_HNW_MEASUREMENT
-}HNWEPP_TYPE_T;
+    HNSEPP_TYPE_NOT_SET,
+    HNSEPP_TYPE_HNW_MEASUREMENT
+}HNSEPP_TYPE_T;
 
-typedef struct HNWEPPPacketData
+typedef struct HNSEPPPacketData
 {
     uint32_t type;
     uint32_t param[6];
     uint32_t payloadLength;
     uint8_t  payload[1024];
-}HNWEPP_PDATA_T;
+}HNSEPP_PDATA_T;
 
-class HNodeWeatherEPPacket
+class HNodeSEPPacket
 {
     private:
-        HNWEPP_PDATA_T packetData;
+        HNSEPP_PDATA_T packetData;
 
     public:
-        HNodeWeatherEPPacket();
-       ~HNodeWeatherEPPacket();
+        HNodeSEPPacket();
+       ~HNodeSEPPacket();
 
-        void setType( HNWEPP_TYPE_T value );
-        HNWEPP_TYPE_T getType();
+        void setType( HNSEPP_TYPE_T value );
+        HNSEPP_TYPE_T getType();
 
         void setParam( int index, uint32_t value );
         uint32_t getParam( int index );

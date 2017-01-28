@@ -153,7 +153,7 @@ class RTL433DemodNotify
 
     public:
         
-        virtual void notifyNewMeasurement( HNodeWeatherMeasurement &reading ) = 0;
+        virtual void notifyNewMeasurement( HNodeSensorMeasurement &reading ) = 0;
 };
 
 
@@ -238,7 +238,7 @@ class RTL433Demodulator
 
         void processRtlsdrData( unsigned char *iq_buf, uint32_t len );
 
-        void sendReading( HNWM_TYPE_T type, HNWM_UNITS_T units, double reading, struct timeval &timestamp );
+        void sendReading( HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp );
         //void trimReadingList();
 
         //boost::thread *rtlThread;

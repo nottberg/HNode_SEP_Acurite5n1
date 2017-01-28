@@ -7,48 +7,48 @@
 
 #include <string>
 
-typedef enum HNodeWeatherMeasurementType
+typedef enum HNodeSensorMeasurementType
 {
-    HNWM_TYPE_NOT_SET            = 0,
-    HNWM_TYPE_WIND_SPEED         = 1,
-    HNWM_TYPE_TEMPERATURE        = 2,
-    HNWM_TYPE_RELATIVE_HUMIDITY  = 3,
-    HNWM_TYPE_WIND_DIRECTION     = 4,
-    HNWM_TYPE_RAINFALL           = 5
-}HNWM_TYPE_T;
+    HNSM_TYPE_NOT_SET            = 0,
+    HNSM_TYPE_WIND_SPEED         = 1,
+    HNSM_TYPE_TEMPERATURE        = 2,
+    HNSM_TYPE_RELATIVE_HUMIDITY  = 3,
+    HNSM_TYPE_WIND_DIRECTION     = 4,
+    HNSM_TYPE_RAINFALL           = 5
+}HNSM_TYPE_T;
 
-typedef enum HNodeWeatherMeasurementUnits
+typedef enum HNodeSensorMeasurementUnits
 {
-    HNWM_UNITS_NOT_SET           = 0,
-    HNWM_UNITS_KPH               = 1,
-    HNWM_UNITS_MPH               = 2,
-    HNWM_UNITS_CELSIUS           = 3,
-    HNWM_UNITS_FAHRENHEIT        = 4,
-    HNWM_UNITS_PERCENT           = 5,
-    HNWM_UNITS_DEGREES           = 6,
-    HNWM_UNITS_INCHES            = 7
-}HNWM_UNITS_T;
+    HNSM_UNITS_NOT_SET           = 0,
+    HNSM_UNITS_KPH               = 1,
+    HNSM_UNITS_MPH               = 2,
+    HNSM_UNITS_CELSIUS           = 3,
+    HNSM_UNITS_FAHRENHEIT        = 4,
+    HNSM_UNITS_PERCENT           = 5,
+    HNSM_UNITS_DEGREES           = 6,
+    HNSM_UNITS_INCHES            = 7
+}HNSM_UNITS_T;
 
-class HNodeWeatherMeasurement
+class HNodeSensorMeasurement
 {
     private:
-        HNWM_TYPE_T     type;  
-        HNWM_UNITS_T    units;
+        HNSM_TYPE_T     type;  
+        HNSM_UNITS_T    units;
         uint32_t        count;
         struct timeval  tstamp;
         double          reading;
 
     public:
-        HNodeWeatherMeasurement();
-       ~HNodeWeatherMeasurement();
+        HNodeSensorMeasurement();
+       ~HNodeSensorMeasurement();
 
-        void setType( HNWM_TYPE_T value );
-        HNWM_TYPE_T getType();
+        void setType( HNSM_TYPE_T value );
+        HNSM_TYPE_T getType();
         void setTypeFromStr( std::string value );
         std::string getTypeAsStr();
   
-        void setUnits( HNWM_UNITS_T value );
-        HNWM_UNITS_T getUnits();
+        void setUnits( HNSM_UNITS_T value );
+        HNSM_UNITS_T getUnits();
         void setUnitsFromStr( std::string value );
         std::string getUnitsAsStr();
 

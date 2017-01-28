@@ -75,7 +75,7 @@ class DaemonProcess : public RTL433DemodNotify
 
         DP_RESULT_T run();
 
-        virtual void notifyNewMeasurement( HNodeWeatherMeasurement &reading );
+        virtual void notifyNewMeasurement( HNodeSensorMeasurement &reading );
 };
 
 DaemonProcess::DaemonProcess()
@@ -371,12 +371,12 @@ DaemonProcess::run()
 }
 
 void 
-DaemonProcess::notifyNewMeasurement( HNodeWeatherMeasurement &reading )
+DaemonProcess::notifyNewMeasurement( HNodeSensorMeasurement &reading )
 {
-    HNodeWeatherEPPacket packet;
+    HNodeSEPPacket packet;
     uint32_t length;
 
-    packet.setType( HNWEPP_TYPE_HNW_MEASUREMENT );
+    packet.setType( HNSEPP_TYPE_HNW_MEASUREMENT );
 
     reading.buildPacketData( packet.getPayloadPtr(), length );
 

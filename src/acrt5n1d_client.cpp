@@ -29,8 +29,8 @@ int main()
     {
         while( 1 )
         {
-            HNodeWeatherEPPacket    packet;
-            HNodeWeatherMeasurement reading;
+            HNodeSEPPacket    packet;
+            HNodeSensorMeasurement reading;
             uint32_t recvd = 0;
 
             //std::cout << "start recvd..." << std::endl;
@@ -39,7 +39,7 @@ int main()
 
             switch( packet.getType() )
             {
-                case HNWEPP_TYPE_HNW_MEASUREMENT:
+                case HNSEPP_TYPE_HNW_MEASUREMENT:
                 {
                     reading.parsePacketData( packet.getPayloadPtr(), recvd );
 
