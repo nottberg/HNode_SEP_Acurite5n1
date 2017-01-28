@@ -234,7 +234,25 @@ HNodeSensorMeasurement::buildPacketData( uint8_t *bufPtr, uint32_t &length )
 
     dPtr = (uint32_t*)(((uint8_t *)dPtr) + strLen);
 
+    // Add the stationID string
+    *dPtr  = htonl( stationID.size() );
+    dPtr += 1;
+
+    memcpy( (uint8_t*)dPtr, stationID.c_str(), stationID.size() );
+
+    dPtr = (uint32_t*)(((uint8_t *)dPtr) + stationID.size());
+
+    // Add the sensorID string
+    *dPtr  = htonl( sensorID.size() );
+    dPtr += 1;
+
+    memcpy( (uint8_t*)dPtr, sensorID.c_str(), sensorID.size() );
+
+    dPtr = (uint32_t*)(((uint8_t *)dPtr) + sensorID.size());
+
+    // Calculate the total packet length
     length = ( ( ( uint8_t* )dPtr ) - bufPtr);
+
 }
 
 void 
@@ -268,8 +286,43 @@ HNodeSensorMeasurement::parsePacketData( uint8_t *bufPtr, uint32_t length )
 
     memcpy( strBuf, (uint8_t *) dPtr, strLen );
     strBuf[ strLen ] = '\0';
-    
+
     sscanf( strBuf, "%lf", &reading );
+
+    // Extract stationID
+    strLen = ntohl( *dPtr );
+    dPtr += 1;
+
+    stationID.clear();
+
+    if( strLen > 0 )
+    {
+        if( strLen > (sizeof strBuf) )
+            strLen = ( sizeof( strBuf ) - 1 );
+
+        memcpy( strBuf, (uint8_t *) dPtr, strLen );
+        strBuf[ strLen ] = '\0';
+
+        stationID = strBuf;
+    }
+
+    // Extract sensorID
+    strLen = ntohl( *dPtr );
+    dPtr += 1;
+
+    sensorID.clear();
+
+    if( strLen > 0 )
+    {
+        if( strLen > (sizeof strBuf) )
+            strLen = ( sizeof( strBuf ) - 1 );
+
+        memcpy( strBuf, (uint8_t *) dPtr, strLen );
+        strBuf[ strLen ] = '\0';
+
+        sensorID = strBuf;
+    }
+    
 }
 
 

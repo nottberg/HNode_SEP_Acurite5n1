@@ -6,13 +6,16 @@
 typedef enum HNodeSEPPacketTypeEnum
 {
     HNSEPP_TYPE_NOT_SET,
-    HNSEPP_TYPE_HNW_MEASUREMENT
+    HNSEPP_TYPE_HNW_MEASUREMENT,
+    HNSEPP_TYPE_HNW_RESET,
+    HNSEPP_TYPE_HNW_STATUS
 }HNSEPP_TYPE_T;
 
 typedef struct HNSEPPPacketData
 {
     uint32_t type;
-    uint32_t param[6];
+    uint32_t sensorIndex;
+    uint32_t param[5];
     uint32_t payloadLength;
     uint8_t  payload[1024];
 }HNSEPP_PDATA_T;
@@ -28,6 +31,9 @@ class HNodeSEPPacket
 
         void setType( HNSEPP_TYPE_T value );
         HNSEPP_TYPE_T getType();
+
+        void setSensorIndex( uint32_t value );
+        uint32_t getSensorIndex();
 
         void setParam( int index, uint32_t value );
         uint32_t getParam( int index );

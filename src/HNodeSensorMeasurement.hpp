@@ -37,6 +37,8 @@ class HNodeSensorMeasurement
         uint32_t        count;
         struct timeval  tstamp;
         double          reading;
+        std::string     stationID;
+        std::string     sensorID;
 
     public:
         HNodeSensorMeasurement();
@@ -57,6 +59,12 @@ class HNodeSensorMeasurement
 
         void setReading( double value );
         double getReading();
+
+        void setStationID( std::string value );
+        std::string getStationID();
+
+        void setSensorID( std::string value );
+        std::string getSensorID();
 
         void setTimestamp( struct timeval &value );
         void getTimestamp( struct timeval &value );
