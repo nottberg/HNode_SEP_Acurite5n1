@@ -304,7 +304,7 @@ DaemonProcess::run()
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
                     // An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) 
-	                fprintf (stderr, "epoll error\n");
+	                daemon_log( LOG_ERR, "epoll error\n" );
 	                close (events[i].data.fd);
 	                continue;
 	            }
@@ -344,8 +344,8 @@ DaemonProcess::run()
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
                     /* An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) */
-	                fprintf (stderr, "epoll error\n");
-	                close (events[i].data.fd);
+                    daemon_log( LOG_ERR, "epoll error\n" );
+                    close (events[i].data.fd);
 	                continue;
 	            }
 
@@ -358,8 +358,8 @@ DaemonProcess::run()
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
                     /* An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) */
-	                fprintf (stderr, "epoll error\n");
-	                close (events[i].data.fd);
+                    daemon_log( LOG_ERR, "epoll error\n" );
+                    close (events[i].data.fd);
 	                continue;
 	            }
 
