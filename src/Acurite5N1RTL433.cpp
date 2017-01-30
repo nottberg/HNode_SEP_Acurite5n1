@@ -1007,6 +1007,12 @@ RTL433Demodulator::sendReading( uint32_t sensorIndex, HNSM_TYPE_T type, HNSM_UNI
     measurementIndex += 1;
 }
 
+uint32_t 
+RTL433Demodulator::getMeasurementCount()
+{
+    return measurementIndex;
+}
+
 int 
 RTL433Demodulator::extractAcurite5n1Data( RTL433BitBuffer *bits )
 {

@@ -475,7 +475,9 @@ DaemonProcess::sendStatusPacket()
 
     packet.setParam( 2, lastReadingTS.tv_sec );
     packet.setParam( 3, lastReadingTS.tv_usec );
-    
+
+    packet.setParam( 4, demod.getMeasurementCount() );
+
     packet.setPayloadLength( curErrMsg.size() );
     memcpy( packet.getPayloadPtr(), curErrMsg.c_str(), curErrMsg.size() );
 

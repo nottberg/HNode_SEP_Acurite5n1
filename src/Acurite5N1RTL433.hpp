@@ -241,6 +241,7 @@ class RTL433Demodulator
         void processRtlsdrData( unsigned char *iq_buf, uint32_t len );
 
         void sendReading( uint32_t sensorIndex, HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp );
+
         //void trimReadingList();
 
         //boost::thread *rtlThread;
@@ -253,6 +254,8 @@ class RTL433Demodulator
        ~RTL433Demodulator();
 
         int32_t getDetectionLimit();
+
+        uint32_t getMeasurementCount();
 
         void clearNotify();
         void setNotify( RTL433DemodNotify *cbOBJ );
