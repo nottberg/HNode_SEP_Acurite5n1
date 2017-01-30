@@ -153,7 +153,9 @@ class RTL433DemodNotify
 
     public:
         
-        virtual void notifyNewMeasurement( HNodeSensorMeasurement &reading ) = 0;
+        virtual void notifyNewMeasurement( uint32_t sensorIndex, HNodeSensorMeasurement &reading ) = 0;
+        virtual void signalError( std::string errMsg ) = 0;
+        virtual void signalRunning() = 0;
 };
 
 
@@ -238,7 +240,7 @@ class RTL433Demodulator
 
         void processRtlsdrData( unsigned char *iq_buf, uint32_t len );
 
-        void sendReading( HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp );
+        void sendReading( uint32_t sensorIndex, HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp );
         //void trimReadingList();
 
         //boost::thread *rtlThread;

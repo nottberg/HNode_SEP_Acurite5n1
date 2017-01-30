@@ -39,7 +39,7 @@ int main()
 
             switch( packet.getType() )
             {
-                case HNSEPP_TYPE_HNW_MEASUREMENT:
+                case HNSEPP_TYPE_HNS_MEASUREMENT:
                 {
                     reading.parsePacketData( packet.getPayloadPtr(), recvd );
 

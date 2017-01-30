@@ -989,7 +989,7 @@ RTL433Demodulator::acurite_getRainfallCounter( uint8_t hibyte, uint8_t lobyte )
 }
 
 void 
-RTL433Demodulator::sendReading( HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp )
+RTL433Demodulator::sendReading( uint32_t sensorIndex, HNSM_TYPE_T type, HNSM_UNITS_T units, double reading, struct timeval &timestamp )
 {
     HNodeSensorMeasurement record;
 
@@ -1002,7 +1002,7 @@ RTL433Demodulator::sendReading( HNSM_TYPE_T type, HNSM_UNITS_T units, double rea
     record.setReading( reading );
     record.setTimestamp( timestamp );
 
-    notifyCB->notifyNewMeasurement( record );
+    notifyCB->notifyNewMeasurement( sensorIndex, record );
 
     measurementIndex += 1;
 }
@@ -1049,9 +1049,9 @@ RTL433Demodulator::extractAcurite5n1Data( RTL433BitBuffer *bits )
                 acurite_5n1raincounter = raincounter;
             }
 
-            sendReading( HNSM_TYPE_WIND_SPEED, HNSM_UNITS_KPH, acurite_getWindSpeed( buf[3], buf[4] ), tstamp );
-            sendReading( HNSM_TYPE_WIND_DIRECTION, HNSM_UNITS_DEGREES, acurite_getWindDirection( buf[4] ), tstamp );
-            sendReading( HNSM_TYPE_RAINFALL, HNSM_UNITS_INCHES, rainfall, tstamp );
+            sendReading( 1, HNSM_TYPE_WIND_SPEED, HNSM_UNITS_KPH, acurite_getWindSpeed( buf[3], buf[4] ), tstamp );
+            sendReading( 2, HNSM_TYPE_WIND_DIRECTION, HNSM_UNITS_DEGREES, acurite_getWindDirection( buf[4] ), tstamp );
+            sendReading( 3, HNSM_TYPE_RAINFALL, HNSM_UNITS_INCHES, rainfall, tstamp );
 
             daemon_log( LOG_ERR,  "wind speed: %d kph, ", acurite_getWindSpeed( buf[3], buf[4] ) );
             daemon_log( LOG_ERR,  "wind direction: %0.1f°, ", acurite_getWindDirection( buf[4] ) );
@@ -1059,9 +1059,9 @@ RTL433Demodulator::extractAcurite5n1Data( RTL433BitBuffer *bits )
         }
         else if( ( buf[2] & 0x0F ) == 8 )
         {
-            sendReading( HNSM_TYPE_WIND_SPEED, HNSM_UNITS_KPH, acurite_getWindSpeed( buf[3], buf[4] ), tstamp );
-            sendReading( HNSM_TYPE_TEMPERATURE, HNSM_UNITS_FAHRENHEIT, acurite_getTemp(buf[4], buf[5]), tstamp );
-            sendReading( HNSM_TYPE_RELATIVE_HUMIDITY, HNSM_UNITS_PERCENT, acurite_getHumidity(buf[6]), tstamp );
+            sendReading( 1, HNSM_TYPE_WIND_SPEED, HNSM_UNITS_KPH, acurite_getWindSpeed( buf[3], buf[4] ), tstamp );
+            sendReading( 4, HNSM_TYPE_TEMPERATURE, HNSM_UNITS_FAHRENHEIT, acurite_getTemp(buf[4], buf[5]), tstamp );
+            sendReading( 5, HNSM_TYPE_RELATIVE_HUMIDITY, HNSM_UNITS_PERCENT, acurite_getHumidity(buf[6]), tstamp );
 
             // wind speed, temp, RH
             daemon_log( LOG_ERR,  "wind speed: %d kph, ", acurite_getWindSpeed(buf[3], buf[4]) );

@@ -20,20 +20,11 @@
 #include <libdaemon/dpid.h>
 #include <libdaemon/dexec.h>
 
+#include <map>
+
 #include "HNodeSensorMeasurement.hpp"
 #include "HNodeSEPPacket.hpp"
 #include "Acurite5N1RTL433.hpp"
-
-#if 0
-int
-main( int argc, char *argv[] )
-{
-    RTL433Demodulator demod;
-    demod.start();
-
-    return 0;
-}
-#endif
 
 #define MAXEVENTS 8
 
@@ -42,6 +33,41 @@ typedef enum DaemonProcessResultEnum
   DP_RESULT_SUCCESS,
   DP_RESULT_FAILURE
 }DP_RESULT_T;
+
+class ClientRecord
+{
+    private:
+        int clientFD;
+
+    public:
+        ClientRecord();
+       ~ClientRecord();
+
+        void setFD( int value );
+        int getFD();
+};
+
+ClientRecord::ClientRecord()
+{
+    clientFD = 0;
+}
+
+ClientRecord::~ClientRecord()
+{
+
+}
+
+void 
+ClientRecord::setFD( int value )
+{
+    clientFD = value;
+}
+
+int 
+ClientRecord::getFD()
+{
+    return clientFD;
+}
 
 class DaemonProcess : public RTL433DemodNotify
 { 
@@ -55,13 +81,24 @@ class DaemonProcess : public RTL433DemodNotify
         struct epoll_event event;
         struct epoll_event *events;
 
-        std::vector< int > clientList;
+        std::map< int, ClientRecord > clientMap;
 
         RTL433Demodulator demod;
 
-        DP_RESULT_T addSocketToEPoll( int sfd );        
+        bool           sendStatus;
+
+        bool           healthOK;
+        std::string    curErrMsg;
+        struct timeval lastReadingTS;
+
+        DP_RESULT_T addSocketToEPoll( int sfd );
+        DP_RESULT_T removeSocketFromEPoll( int sfd );        
+      
         DP_RESULT_T processNewClientConnections();
         DP_RESULT_T processClientRequest( int efd );
+        DP_RESULT_T closeClientConnection( int cfd );
+
+        void sendStatusPacket();
 
     public:
         DaemonProcess();
@@ -75,12 +112,23 @@ class DaemonProcess : public RTL433DemodNotify
 
         DP_RESULT_T run();
 
-        virtual void notifyNewMeasurement( HNodeSensorMeasurement &reading );
+        virtual void notifyNewMeasurement( uint32_t sensorIndex, HNodeSensorMeasurement &reading );
+        virtual void signalError( std::string errMsg );
+        virtual void signalRunning();
 };
 
 DaemonProcess::DaemonProcess()
 {
     quit = false;
+
+    sendStatus = false;
+
+    healthOK   = false;
+
+    curErrMsg.empty();
+
+    lastReadingTS.tv_sec  = 0;
+    lastReadingTS.tv_usec = 0;
 }
 
 DaemonProcess::~DaemonProcess()
@@ -120,6 +168,20 @@ DaemonProcess::addSocketToEPoll( int sfd )
 }
 
 DP_RESULT_T
+DaemonProcess::removeSocketFromEPoll( int sfd )
+{
+    int s;
+
+    s = epoll_ctl( epollFD, EPOLL_CTL_DEL, sfd, NULL );
+    if( s == -1 )
+    {
+        return DP_RESULT_FAILURE;
+    }
+
+    return DP_RESULT_SUCCESS;
+}
+
+DP_RESULT_T
 DaemonProcess::init()
 {
     epollFD = epoll_create1( 0 );
@@ -133,7 +195,11 @@ DaemonProcess::init()
     events = (struct epoll_event *) calloc( MAXEVENTS, sizeof event );
 
     demod.setNotify( this ); 
+
     demod.init();
+
+    // Things initialized correctly.
+    healthOK = true;
 
     return DP_RESULT_SUCCESS;
 }
@@ -215,10 +281,29 @@ DaemonProcess::processNewClientConnections( )
 
         daemon_log( LOG_ERR, "Adding client - sfd: %d", infd );
 
-        clientList.push_back( infd );
+        ClientRecord client;
+
+        client.setFD( infd );
+
+        clientMap.insert( std::pair< int, ClientRecord >( infd, client ) );
 
         addSocketToEPoll( infd );
     }
+
+    return DP_RESULT_SUCCESS;
+}
+
+                    
+DP_RESULT_T
+DaemonProcess::closeClientConnection( int clientFD )
+{
+    clientMap.erase( clientFD );
+
+    removeSocketFromEPoll( clientFD );
+
+    close( clientFD );
+
+    daemon_log( LOG_ERR, "Closed client - sfd: %d", clientFD );
 
     return DP_RESULT_SUCCESS;
 }
@@ -227,41 +312,35 @@ DP_RESULT_T
 DaemonProcess::processClientRequest( int efd )
 {
     // One of the clients has sent us a message.
-    int done = 0;
+    HNodeSEPPacket  packet;
+    uint32_t        recvd = 0;
 
-#if 0
-    while(1)
+    //std::cout << "start recvd..." << std::endl;
+
+    recvd += recv( efd, packet.getPacketPtr(), packet.getMaxPacketLength(), 0 );
+
+    switch( packet.getType() )
     {
-        ssize_t count;
-        char buf[512];
+        case HNSEPP_TYPE_HNS_PING:
+        {
+            daemon_log( LOG_ERR, "Ping request from client: %d", efd );
+            sendStatus = true;
+        }
+        break;
 
-        count = read( events[i].data.fd, buf, sizeof buf );
-        if( count == -1 )
+        case HNSEPP_TYPE_HNS_RESET:
         {
-            // If errno == EAGAIN, that means we have read all data. So go back to the main loop.
-            if( errno != EAGAIN )
-            {
-                perror ("read");
-                done = 1;
-            }
-            break;
+            daemon_log( LOG_ERR, "Reset request from client: %d", efd );
+            sendStatus = true;
         }
-        else if( count == 0 )
-        {
-            /* End of file. The remote has closed the connection. */
-            done = 1;
-            break;
-        }
+        break;
 
-        /* Write the buffer to standard output */
-        s = write( 1, buf, count );
-        if( s == -1 )
+        default:
         {
-            perror("write");
-            abort();
+            daemon_log( LOG_ERR, "RX of unknown packet - len: %d  type: %d", recvd, packet.getType() );
         }
+        break;
     }
-#endif
 
 }
 
@@ -289,6 +368,14 @@ DaemonProcess::run()
         // Timeout
         if( n == 0 )
         {
+            // Check if a status update should
+            // be sent
+            if( sendStatus )
+            {
+                sendStatusPacket();
+                sendStatus = false;
+            }
+
             // Run the RTLSDR loop
             demod.processSample();
             continue;
@@ -304,7 +391,7 @@ DaemonProcess::run()
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
                     // An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) 
-	                daemon_log( LOG_ERR, "epoll error\n" );
+	                daemon_log( LOG_ERR, "epoll error on daemon signal socket\n" );
 	                close (events[i].data.fd);
 	                continue;
 	            }
@@ -333,7 +420,7 @@ DaemonProcess::run()
                     case SIGHUP:
                     default:
                     {
-                        daemon_log( LOG_INFO, "Ignoring signal" );
+                        daemon_log( LOG_INFO, "HUP - Ignoring signal" );
                         break;
                     }
                 }
@@ -344,7 +431,7 @@ DaemonProcess::run()
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
                     /* An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) */
-                    daemon_log( LOG_ERR, "epoll error\n" );
+                    daemon_log( LOG_ERR, "accept socket closed - restarting\n" );
                     close (events[i].data.fd);
 	                continue;
 	            }
@@ -357,9 +444,9 @@ DaemonProcess::run()
                 // New client connections
 	            if( (events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN)) )
 	            {
-                    /* An error has occured on this fd, or the socket is not ready for reading (why were we notified then?) */
-                    daemon_log( LOG_ERR, "epoll error\n" );
-                    close (events[i].data.fd);
+                    // An error has occured on this fd, or the socket is not ready for reading (why were we notified then?)
+                    closeClientConnection( events[i].data.fd );
+
 	                continue;
 	            }
 
@@ -371,21 +458,64 @@ DaemonProcess::run()
 }
 
 void 
-DaemonProcess::notifyNewMeasurement( HNodeSensorMeasurement &reading )
+DaemonProcess::sendStatusPacket()
+{
+    HNodeSEPPacket packet;
+    uint32_t length;
+    struct timeval curTS;
+
+    gettimeofday( &curTS, NULL );
+
+    packet.setType( HNSEPP_TYPE_HNS_STATUS );
+
+    packet.setSensorIndex( healthOK );
+
+    packet.setParam( 0, curTS.tv_sec );
+    packet.setParam( 1, curTS.tv_usec );
+
+    packet.setParam( 2, lastReadingTS.tv_sec );
+    packet.setParam( 3, lastReadingTS.tv_usec );
+    
+    packet.setPayloadLength( curErrMsg.size() );
+    memcpy( packet.getPayloadPtr(), curErrMsg.c_str(), curErrMsg.size() );
+
+    for( std::map< int, ClientRecord >::iterator it = clientMap.begin(); it != clientMap.end(); it++ )
+    {
+        length = send( it->first, packet.getPacketPtr(), packet.getPacketLength(), MSG_NOSIGNAL );         
+    }    
+}
+
+void 
+DaemonProcess::notifyNewMeasurement( uint32_t sensorIndex, HNodeSensorMeasurement &reading )
 {
     HNodeSEPPacket packet;
     uint32_t length;
 
-    packet.setType( HNSEPP_TYPE_HNW_MEASUREMENT );
+    packet.setType( HNSEPP_TYPE_HNS_MEASUREMENT );
 
     reading.buildPacketData( packet.getPayloadPtr(), length );
 
     packet.setPayloadLength( length );
+    packet.setSensorIndex( sensorIndex );
 
-    for( std::vector< int >::iterator it = clientList.begin(); it != clientList.end(); it++ )
+    for( std::map< int, ClientRecord >::iterator it = clientMap.begin(); it != clientMap.end(); it++ )
     {
-        length = send( *it, packet.getPacketPtr(), packet.getPacketLength(), MSG_NOSIGNAL );         
+        length = send( it->first, packet.getPacketPtr(), packet.getPacketLength(), MSG_NOSIGNAL );         
     }    
+}
+
+void 
+DaemonProcess::signalError( std::string errMsg )
+{
+    healthOK  = false;
+    curErrMsg = errMsg;
+}
+
+void 
+DaemonProcess::signalRunning()
+{
+    healthOK = true;
+    curErrMsg.clear();
 }
 
 int 
@@ -496,7 +626,10 @@ main( int argc, char *argv[] )
         }
 
         /*... do some further init work here */
-        dp.init();
+        if( dp.init() != DP_RESULT_SUCCESS )
+        {
+            daemon_log( LOG_ERR, "Failure while initializing." );
+        }
 
         dp.addSignalSocket( daemon_signal_fd() );
 
