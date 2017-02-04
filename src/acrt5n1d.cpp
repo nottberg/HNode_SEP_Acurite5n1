@@ -98,7 +98,7 @@ class DaemonProcess : public RTL433DemodNotify
         DP_RESULT_T processClientRequest( int efd );
         DP_RESULT_T closeClientConnection( int cfd );
 
-        void sendStatusPacket();
+        void sendStatusPacket( struct timeval *curTS );
 
     public:
         DaemonProcess();
@@ -184,6 +184,9 @@ DaemonProcess::removeSocketFromEPoll( int sfd )
 DP_RESULT_T
 DaemonProcess::init()
 {
+    // Default to health ok
+    healthOK = true;
+
     epollFD = epoll_create1( 0 );
     if( epollFD == -1 )
     {
@@ -198,8 +201,8 @@ DaemonProcess::init()
 
     demod.init();
 
-    // Things initialized correctly.
-    healthOK = true;
+    // Start reading time now.
+    gettimeofday( &lastReadingTS, NULL );
 
     return DP_RESULT_SUCCESS;
 }
@@ -331,6 +334,16 @@ DaemonProcess::processClientRequest( int efd )
         case HNSEPP_TYPE_HNS_RESET:
         {
             daemon_log( LOG_ERR, "Reset request from client: %d", efd );
+
+            // Start out with good health.
+            healthOK = true;
+
+            // Reinitialize the underlying RTLSDR code.
+            demod.init();
+
+            // Start reading time now.
+            gettimeofday( &lastReadingTS, NULL );
+
             sendStatus = true;
         }
         break;
@@ -368,11 +381,23 @@ DaemonProcess::run()
         // Timeout
         if( n == 0 )
         {
+            struct timeval curTS;
+
+            // Get current time
+            gettimeofday( &curTS, NULL );
+
+            // If a reading hasn't been seen for 2 minutes then
+            // degrade the health state.
+            if( (curTS.tv_sec - lastReadingTS.tv_sec) > 120 )
+            {
+                signalError( "No measurments within last 2 minutes." );
+            }
+
             // Check if a status update should
             // be sent
             if( sendStatus )
             {
-                sendStatusPacket();
+                sendStatusPacket( &curTS );
                 sendStatus = false;
             }
 
@@ -458,20 +483,17 @@ DaemonProcess::run()
 }
 
 void 
-DaemonProcess::sendStatusPacket()
+DaemonProcess::sendStatusPacket( struct timeval *curTS )
 {
     HNodeSEPPacket packet;
     uint32_t length;
-    struct timeval curTS;
-
-    gettimeofday( &curTS, NULL );
 
     packet.setType( HNSEPP_TYPE_HNS_STATUS );
 
     packet.setSensorIndex( healthOK );
 
-    packet.setParam( 0, curTS.tv_sec );
-    packet.setParam( 1, curTS.tv_usec );
+    packet.setParam( 0, curTS->tv_sec );
+    packet.setParam( 1, curTS->tv_usec );
 
     packet.setParam( 2, lastReadingTS.tv_sec );
     packet.setParam( 3, lastReadingTS.tv_usec );
@@ -493,6 +515,8 @@ DaemonProcess::notifyNewMeasurement( uint32_t sensorIndex, HNodeSensorMeasuremen
     HNodeSEPPacket packet;
     uint32_t length;
 
+    gettimeofday( &lastReadingTS, NULL );
+
     packet.setType( HNSEPP_TYPE_HNS_MEASUREMENT );
 
     reading.buildPacketData( packet.getPayloadPtr(), length );
@@ -503,21 +527,37 @@ DaemonProcess::notifyNewMeasurement( uint32_t sensorIndex, HNodeSensorMeasuremen
     for( std::map< int, ClientRecord >::iterator it = clientMap.begin(); it != clientMap.end(); it++ )
     {
         length = send( it->first, packet.getPacketPtr(), packet.getPacketLength(), MSG_NOSIGNAL );         
-    }    
+    }
+
+    // Since we recieved a measurement
+    // things must be working.
+    signalRunning();
 }
 
 void 
 DaemonProcess::signalError( std::string errMsg )
 {
-    healthOK  = false;
-    curErrMsg = errMsg;
+    if( (healthOK == true) || (curErrMsg != errMsg) )
+    {
+        daemon_log( LOG_ERR, "Signal Error: %s\n", errMsg.c_str() );
+
+        healthOK   = false;
+        curErrMsg  = errMsg;
+        sendStatus = true;
+    }
 }
 
 void 
 DaemonProcess::signalRunning()
 {
-    healthOK = true;
-    curErrMsg.clear();
+    if( healthOK == false )
+    {
+        daemon_log( LOG_ERR, "Signal Running\n" );
+
+        healthOK  = true;
+        curErrMsg.clear();
+        sendStatus = true;
+    }
 }
 
 int 

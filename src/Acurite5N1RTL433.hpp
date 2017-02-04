@@ -248,6 +248,7 @@ class RTL433Demodulator
 
         //boost::mutex readingListMutex;
 
+        void cleanup();
 
     public:
         RTL433Demodulator();
@@ -263,8 +264,6 @@ class RTL433Demodulator
         void init();
         
         void processSample();
-
-        void cleanup();
 
 //        void start();
 

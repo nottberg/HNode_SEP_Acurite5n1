@@ -397,7 +397,6 @@ RTL433Demodulator::RTL433Demodulator()
     do_exit = 0;
     samp_rate = DEFAULT_SAMPLE_RATE;
     dev = NULL;
-    //rtlThread = NULL;
 
     am_buf = (int16_t *) malloc( (sizeof( int16_t ) * MAXIMAL_BUF_LENGTH) );	
     fm_buf = (int16_t *) malloc( (sizeof( int16_t ) * MAXIMAL_BUF_LENGTH) ); 
@@ -412,6 +411,13 @@ RTL433Demodulator::RTL433Demodulator()
 
 RTL433Demodulator::~RTL433Demodulator()
 {
+    // Check if we have an open rtlsdr device.
+    if( dev != NULL )
+    {
+        rtlsdr_close( dev );
+        dev = NULL;
+    }
+
     free( am_buf );
     free( fm_buf );
     free( temp_buf );
@@ -823,6 +829,10 @@ RTL433Demodulator::init()
     int r = 0;
     uint32_t dev_index = 0;
 
+    // Check if we need to cleanup from a previous run
+    cleanup();
+
+    // Start initializing.
     do_exit = false;
 
     level_limit = DEFAULT_LEVEL_LIMIT;
@@ -831,20 +841,35 @@ RTL433Demodulator::init()
 	if( r < 0 ) 
     {
 	    daemon_log( LOG_ERR, "Failed to open rtlsdr device #%d.\n", dev_index);
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Failed to open RTLSDR device." );
+        dev = NULL;
 	    return;
 	}
 
 	/* Set the sample rate */
 	r = rtlsdr_set_sample_rate(dev, samp_rate);
 	if (r < 0)
+    {
 	    daemon_log( LOG_ERR, "WARNING: Failed to set sample rate.\n");
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Failed to set sample rate." );
+        cleanup();
+	    return;
+    }
 	else
 	    daemon_log( LOG_ERR, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
     /* Enable automatic gain */
     r = rtlsdr_set_tuner_gain_mode( dev, 0 );
     if( r < 0 )
+    {
         daemon_log( LOG_ERR,  "WARNING: Failed to enable automatic gain.\n" );
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Failed to enable automatic gain." );
+        cleanup();
+	    return;
+    }
     else
         daemon_log( LOG_ERR,  "Tuner gain set to Auto.\n" );
 
@@ -855,13 +880,25 @@ RTL433Demodulator::init()
     /* Reset endpoint before we start reading from it (mandatory) */
     r = rtlsdr_reset_buffer( dev );
     if( r < 0 )
+    {
         daemon_log( LOG_ERR,  "WARNING: Failed to reset buffers.\n" );
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Failed to reset buffers." );
+        cleanup();
+	    return;
+    }
 
     // Set the frequency
     r = rtlsdr_set_center_freq( dev, DEFAULT_FREQUENCY );
 
     if (r < 0)
+    {
         daemon_log( LOG_ERR, "WARNING: Failed to set center freq.\n");
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Failed to set center freq." );
+        rtlsdr_close( dev );
+	    cleanup();
+    }
     else
         daemon_log( LOG_ERR, "Tuned to %u Hz.\n", rtlsdr_get_center_freq(dev));
 
@@ -870,8 +907,31 @@ RTL433Demodulator::init()
 void
 RTL433Demodulator::cleanup()
 {
+    // Check if we have an open rtlsdr device.
+    if( dev != NULL )
+    {
+        rtlsdr_close( dev );
+        dev = NULL;
+    }
 
+    // Reset all of the state variables
+    ook_state         = PD_OOK_STATE_IDLE;
+    curPulse          = NULL;
+    pulse_length      = 0;    
+    max_pulse         = 0;    
 
+    data_counter      = 0;  
+    lead_in_counter   = 0; 
+
+    ook_low_estimate  = 0; 
+    ook_high_estimate = 0; 
+
+    // Init other variables
+    do_exit                = 0;
+    samp_rate              = DEFAULT_SAMPLE_RATE;
+
+    acurite_5n1raincounter = 0;
+    measurementIndex       = 0;
 }
 
 void 
@@ -881,6 +941,9 @@ RTL433Demodulator::processSample()
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int n_read = 0;
 
+    // Make sure we are initialized.
+    if( dev == NULL )
+        return;
 #if 0
     r = rtlsdr_read_async(dev, RTL433Demodulator::rtlsdr_callback, (void *) this, DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 #endif
@@ -891,6 +954,8 @@ RTL433Demodulator::processSample()
     if( r < 0 )
     {
         daemon_log( LOG_ERR, "sync read failed.\n" );
+        if( notifyCB )
+            notifyCB->signalError( "RTLSDR ERROR: Synchronous read failure." );
         return;
     }
 
