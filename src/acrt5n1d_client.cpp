@@ -102,17 +102,14 @@ int main( int argc, char *argv[] )
 
                 case HNSEPP_TYPE_HNS_STATUS:
                 {
+                    char timeBuf[64];
                     std::string health;
                     struct timeval statusTime;
                     struct timeval lastMeasurementTime;
                     unsigned long measurementCount;
                     std::string msg;
-
-                    //reading.parsePacketData( packet.getPayloadPtr(), recvd );
-
-                    //std::cout << reading.getAsStr() << std::endl;
-                    std::cout << "recvd: " << recvd << std::endl;
-                    
+                  
+                    // Decode the packet data.
                     health = ( packet.getSensorIndex() == 1 ) ? "OK" : "Degraded";
 
                     statusTime.tv_sec  = packet.getParam( 0 );
@@ -125,29 +122,17 @@ int main( int argc, char *argv[] )
        
                     msg.assign( (const char *)packet.getPayloadPtr(), packet.getPayloadLength() );
 
+                    // Output the status line
                     std::cout << "Status: " << health;
-                    std::cout << "  TS: " << statusTime.tv_sec;
-                    std::cout << "  MTS: " << lastMeasurementTime.tv_sec;
+
+                    strftime( timeBuf, sizeof timeBuf, "%H:%M:%S", localtime( &(statusTime.tv_sec) ) );
+                    std::cout << "  CT: " << timeBuf;
+
+                    strftime( timeBuf, sizeof timeBuf, "%H:%M:%S", localtime( &(lastMeasurementTime.tv_sec) ) );
+                    std::cout << "  MT: " << timeBuf;
                     std::cout << "  MC: " << measurementCount;
                     std::cout << "  Msg: " << msg;
                     std::cout << std::endl;
-
-#if 0
-
-    packet.setSensorIndex( healthOK );
-
-    packet.setParam( 0, curTS->tv_sec );
-    packet.setParam( 1, curTS->tv_usec );
-
-    packet.setParam( 2, lastReadingTS.tv_sec );
-    packet.setParam( 3, lastReadingTS.tv_usec );
-
-    packet.setParam( 4, demod.getMeasurementCount() );
-
-    packet.setPayloadLength( curErrMsg.size() );
-    memcpy( packet.getPayloadPtr(), curErrMsg.c_str(), curErrMsg.size() );
-#endif
-
                 }
                 break;
 
