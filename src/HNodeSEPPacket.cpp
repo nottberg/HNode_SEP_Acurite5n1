@@ -4,7 +4,7 @@
 
 HNodeSEPPacket::HNodeSEPPacket()
 {
-
+    packetData.payloadLength = htonl( 0 );
 }
 
 HNodeSEPPacket::~HNodeSEPPacket()
