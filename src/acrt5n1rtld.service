@@ -1,0 +1,13 @@
+[Unit]
+Description=Read values from AccuRight 5n1 weather station via SDR-RT
+
+[Service]
+Type=forking
+PIDFile=/var/run/acrt5n1rtld.pid
+ExecStart=/usr/bin/acrt5n1rtld
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/usr/bin/acrt5n1rtld -k
+
+[Install]
+WantedBy=multi-user.target
+
